@@ -70,7 +70,7 @@ Rules:
 - Return only the fully colored version of the same illustration at the same composition and aspect ratio.`
 
     const result = await generateText({
-      model: googleAI("gemini-2.0-flash-exp"),
+      model: googleAI("gemini-3.1-flash-image"),
       providerOptions: {
         google: { responseModalities: ["TEXT", "IMAGE"] },
       },
