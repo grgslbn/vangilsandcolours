@@ -1,5 +1,7 @@
 import { generateText } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { readFileSync } from "fs"
+import { join, extname } from "path"
 
 export const maxDuration = 60
 
@@ -15,12 +17,27 @@ type ColorizeBody = {
   paletteName?: string
 }
 
+const EXT_MIME: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+}
+
 async function toBase64(image: string, fallbackType: string) {
   // Already a data URL
   if (image.startsWith("data:")) {
     const [meta, data] = image.split(",")
     const mediaType = meta.match(/data:(.*?);base64/)?.[1] ?? fallbackType
     return { base64: data, mediaType }
+  }
+  // Public asset path (e.g. /samples/economie.jpg) — read from disk
+  if (image.startsWith("/") && !image.startsWith("//")) {
+    const filePath = join(process.cwd(), "public", image)
+    const buffer = readFileSync(filePath)
+    const mediaType = EXT_MIME[extname(image).toLowerCase()] ?? fallbackType
+    return { base64: buffer.toString("base64"), mediaType }
   }
   // Remote URL — fetch and convert
   const res = await fetch(image)
