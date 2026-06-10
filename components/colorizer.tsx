@@ -40,7 +40,7 @@ export function Colorizer() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Er ging iets mis.")
+      if (!res.ok) throw new Error((data.debug || data.error) || "Er ging iets mis.")
       setResult(data.image)
       toast.success("Afbeelding ingekleurd!")
     } catch (e) {

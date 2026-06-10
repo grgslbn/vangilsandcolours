@@ -82,6 +82,7 @@ Rules:
     })
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err)
+    console.error("[colorize] full error:", err)
 
     // Surface a clear, actionable message for the common quota/billing cases.
     let message = "Het inkleuren is mislukt. Probeer het opnieuw."
@@ -94,6 +95,6 @@ Rules:
       message = "Het opgegeven AI-model is niet beschikbaar."
     }
 
-    return Response.json({ error: message }, { status: 500 })
+    return Response.json({ error: message, debug: raw }, { status: 500 })
   }
 }
