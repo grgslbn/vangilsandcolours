@@ -12,7 +12,7 @@ export default function Page() {
           </span>
           <div>
             <h1 className="text-lg font-semibold leading-tight text-card-foreground text-balance">
-              Illustratie Inkleuren
+              Van Gils & Colours
             </h1>
             <p className="text-sm text-muted-foreground">
               Kleur zwart-wit lijntekeningen in met je huisstijlpalet via Gemini
