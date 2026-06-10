@@ -1,0 +1,31 @@
+import { Colorizer } from "@/components/colorizer"
+import { Toaster } from "@/components/ui/sonner"
+import { Palette } from "lucide-react"
+
+export default function Page() {
+  return (
+    <main className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-5 sm:px-6">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Palette className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-lg font-semibold leading-tight text-card-foreground text-balance">
+              Illustratie Inkleuren
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Kleur zwart-wit lijntekeningen in met je huisstijlpalet via Gemini
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+        <Colorizer />
+      </section>
+
+      <Toaster />
+    </main>
+  )
+}
