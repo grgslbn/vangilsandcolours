@@ -11,13 +11,14 @@ import { cn } from "@/lib/utils"
 const TOOL_LABELS: Record<string, string> = {
   colouring:    "Colouring",
   splash_panels: "Splash Panels",
+  characters:   "Characters",
 }
 
 export function GenerationsGallery() {
   const router = useRouter()
   const [items, setItems] = useState<Generation[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<"all" | "colouring" | "splash_panels">("all")
+  const [filter, setFilter] = useState<"all" | "colouring" | "splash_panels" | "characters">("all")
 
   async function load() {
     setLoading(true)
@@ -80,7 +81,7 @@ export function GenerationsGallery() {
         </div>
         {/* Filter */}
         <div className="flex gap-1">
-          {(["all", "colouring", "splash_panels"] as const).map((f) => (
+          {(["all", "colouring", "splash_panels", "characters"] as const).map((f) => (
             <button
               key={f}
               type="button"
@@ -92,7 +93,7 @@ export function GenerationsGallery() {
                   : "border-border bg-background text-foreground hover:bg-muted",
               )}
             >
-              {f === "all" ? "Alles" : TOOL_LABELS[f]}
+              {f === "all" ? "Alles" : (TOOL_LABELS[f] ?? f)}
             </button>
           ))}
         </div>
