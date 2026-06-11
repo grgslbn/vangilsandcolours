@@ -5,6 +5,7 @@ import { BRAND_PALETTES, type Palette } from "@/lib/palettes"
 import { PalettePicker } from "@/components/palette-picker"
 import { ImagePicker, type SelectedImage } from "@/components/image-picker"
 import { ComparisonView } from "@/components/comparison-view"
+import { AdvancedSettings, DEFAULT_ADVANCED, type AdvancedSettingsValue } from "@/components/advanced-settings"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Wand2 } from "lucide-react"
@@ -14,6 +15,7 @@ export function Colorizer() {
   const [palettes, setPalettes] = useState<Palette[]>(BRAND_PALETTES)
   const [selectedPalette, setSelectedPalette] = useState<Palette | null>(BRAND_PALETTES[1])
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null)
+  const [advanced, setAdvanced] = useState<AdvancedSettingsValue>(DEFAULT_ADVANCED)
   const [result, setResult] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,6 +39,7 @@ export function Colorizer() {
           image: selectedImage.src,
           colors: selectedPalette.colors,
           paletteName: selectedPalette.name,
+          advanced,
         }),
       })
       const data = await res.json()
@@ -66,6 +69,8 @@ export function Colorizer() {
           onSelect={setSelectedPalette}
           onAddPalette={addPalette}
         />
+        <div className="h-px bg-border" />
+        <AdvancedSettings value={advanced} onChange={setAdvanced} />
         <Button className="w-full gap-2" size="lg" disabled={!canColorize} onClick={colorize}>
           <Wand2 className="h-4 w-4" />
           {loading ? "Bezig met inkleuren…" : "Kleur in met Gemini"}
