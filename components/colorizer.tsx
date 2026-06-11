@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { BRAND_PALETTES, type Palette } from "@/lib/palettes"
 import { PalettePicker } from "@/components/palette-picker"
 import { ImagePicker, type SelectedImage } from "@/components/image-picker"
@@ -15,6 +15,15 @@ export function Colorizer() {
   const [palettes, setPalettes] = useState<Palette[]>(BRAND_PALETTES)
   const [selectedPalette, setSelectedPalette] = useState<Palette | null>(BRAND_PALETTES[1])
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null)
+
+  // Pick up an image passed from the Splash Panels tool
+  useEffect(() => {
+    const injected = sessionStorage.getItem("injected_image")
+    if (injected) {
+      sessionStorage.removeItem("injected_image")
+      setSelectedImage({ src: injected, name: "Splash panel", isUpload: true })
+    }
+  }, [])
   const [advanced, setAdvanced] = useState<AdvancedSettingsValue>(DEFAULT_ADVANCED)
   const [result, setResult] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
