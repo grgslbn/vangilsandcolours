@@ -4,16 +4,23 @@ import { useEffect, useRef, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import { Wand2, Upload, Check, Loader2, ImageOff, Download, Bookmark, BookmarkCheck } from "lucide-react"
+import { Wand2, Upload, Check, Loader2, ImageOff, Download, Bookmark, BookmarkCheck, Plus, X } from "lucide-react"
 import { toast } from "sonner"
 import type { GenerateCharacterBody } from "@/app/api/generate-character/route"
 
-type Character = { id: string; name: string; public_url: string }
+type Character   = { id: string; name: string; public_url: string }
 type OutputStyle = GenerateCharacterBody["outputStyle"]
 type Background  = GenerateCharacterBody["background"]
+
+type ResultItem = {
+  action: string
+  image: string | null
+  error: string | null
+  saving: boolean
+  saved: boolean
+}
 
 function OptionGroup<T extends string>({
   label, options, value, onChange,
@@ -47,21 +54,20 @@ export function CharacterGenerator() {
   const uploadRef = useRef<HTMLInputElement>(null)
 
   // Character source
-  const [library, setLibrary] = useState<Character[]>([])
-  const [selected, setSelected] = useState<{ id: string; name: string; src: string } | null>(null)
+  const [library, setLibrary]           = useState<Character[]>([])
+  const [selected, setSelected]         = useState<{ id: string; name: string; src: string } | null>(null)
   const [uploadPreview, setUploadPreview] = useState<{ src: string; name: string } | null>(null)
 
-  // Settings
-  const [action, setAction] = useState("")
-  const [outputStyle, setOutputStyle] = useState<OutputStyle>("same")
-  const [background, setBackground] = useState<Background>("white")
+  // Actions list
+  const [actions, setActions] = useState<string[]>([""])
 
-  // Result
-  const [result, setResult] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Style settings
+  const [outputStyle, setOutputStyle] = useState<OutputStyle>("same")
+  const [background, setBackground]   = useState<Background>("white")
+
+  // Results (one per action)
+  const [results, setResults]   = useState<ResultItem[]>([])
+  const [loading, setLoading]   = useState(false)
 
   useEffect(() => {
     supabase.from("VanGils_characters").select("id, name, public_url")
@@ -83,62 +89,95 @@ export function CharacterGenerator() {
 
   const activeCharSrc = uploadPreview?.src ?? selected?.src ?? null
 
+  // Actions management
+  function updateAction(i: number, val: string) {
+    setActions((prev) => prev.map((a, idx) => idx === i ? val : a))
+  }
+  function addAction() {
+    setActions((prev) => [...prev, ""])
+  }
+  function removeAction(i: number) {
+    setActions((prev) => prev.length === 1 ? [""] : prev.filter((_, idx) => idx !== i))
+  }
+
   async function generate() {
     if (!activeCharSrc) { toast.error("Selecteer of upload een personage."); return }
-    if (!action.trim()) { toast.error("Geef een actie op."); return }
+    const filled = actions.filter((a) => a.trim())
+    if (filled.length === 0) { toast.error("Geef minimaal één actie op."); return }
+
     setLoading(true)
-    setError(null)
-    setResult(null)
-    setSaved(false)
-    try {
-      const res = await fetch("/api/generate-character", {
+
+    // Initialise result slots immediately so the UI shows spinners
+    setResults(filled.map((action) => ({ action, image: null, error: null, saving: false, saved: false })))
+
+    // Fire all calls in parallel
+    const promises = filled.map((action) =>
+      fetch("/api/generate-character", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ characterImageUrl: activeCharSrc, action, outputStyle, background } satisfies GenerateCharacterBody),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.debug || data.error || "Er ging iets mis.")
-      setResult(data.image)
-      toast.success("Personage gegenereerd!")
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Er ging iets mis."
-      setError(msg)
-      toast.error(msg)
-    } finally {
-      setLoading(false)
-    }
+        .then((r) => r.json())
+        .then((data) => ({ action, image: data.image ?? null, error: data.error ?? null }))
+        .catch((err) => ({ action, image: null, error: err instanceof Error ? err.message : "Er ging iets mis." }))
+    )
+
+    // Update results as each one finishes
+    const settled = await Promise.all(
+      promises.map((p, i) =>
+        p.then((res) => {
+          setResults((prev) => prev.map((r, idx) => idx === i ? { ...r, ...res } : r))
+          return res
+        })
+      )
+    )
+
+    const succeeded = settled.filter((r) => r.image).length
+    const failed    = settled.filter((r) => r.error).length
+    if (succeeded > 0) toast.success(`${succeeded} afbeelding${succeeded > 1 ? "en" : ""} gegenereerd.`)
+    if (failed > 0)    toast.error(`${failed} generatie${failed > 1 ? "s" : ""} mislukt.`)
+
+    setLoading(false)
   }
 
-  function download() {
-    if (!result) return
+  function download(item: ResultItem) {
+    if (!item.image) return
     const a = document.createElement("a")
-    a.href = result
-    a.download = `personage-${Date.now()}.png`
+    a.href = item.image
+    a.download = `personage-${item.action.slice(0, 30).replace(/\s+/g, "-")}.png`
     a.click()
   }
 
-  async function saveGeneration() {
-    if (!result) return
-    setSaving(true)
+  async function saveResult(index: number) {
+    const item = results[index]
+    if (!item?.image) return
+    setResults((prev) => prev.map((r, i) => i === index ? { ...r, saving: true } : r))
     try {
       const res = await fetch("/api/save-generation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tool: "characters",
-          imageDataUrl: result,
-          settingsJson: { character: selected?.name ?? uploadPreview?.name, action, outputStyle, background },
+          imageDataUrl: item.image,
+          settingsJson: {
+            character: selected?.name ?? uploadPreview?.name,
+            action: item.action,
+            outputStyle,
+            background,
+          },
         }),
       })
       if (!res.ok) throw new Error()
-      setSaved(true)
+      setResults((prev) => prev.map((r, i) => i === index ? { ...r, saving: false, saved: true } : r))
       toast.success("Opgeslagen.")
     } catch {
+      setResults((prev) => prev.map((r, i) => i === index ? { ...r, saving: false } : r))
       toast.error("Opslaan mislukt.")
-    } finally {
-      setSaving(false)
     }
   }
+
+  const hasResults = results.length > 0
+  const allDone    = hasResults && results.every((r) => r.image || r.error)
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[400px_1fr]">
@@ -156,15 +195,12 @@ export function CharacterGenerator() {
             <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
           </div>
 
-          {/* Uploaded preview */}
           {uploadPreview && (
-            <div
-              onClick={() => { setSelected(null) }}
+            <div onClick={() => setSelected(null)}
               className={cn(
                 "relative cursor-pointer overflow-hidden rounded-lg border-2 bg-card p-2 transition-colors",
                 !selected ? "border-primary" : "border-border hover:border-primary/50",
-              )}
-            >
+              )}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={uploadPreview.src} alt={uploadPreview.name} className="h-24 w-full object-contain" />
               <p className="mt-1 truncate text-center text-xs font-medium">{uploadPreview.name}</p>
@@ -176,7 +212,6 @@ export function CharacterGenerator() {
             </div>
           )}
 
-          {/* Library grid */}
           {library.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {library.map((c) => {
@@ -213,16 +248,39 @@ export function CharacterGenerator() {
 
         <div className="h-px bg-border" />
 
-        {/* Action prompt */}
+        {/* Multi-action list */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Actie / scene</Label>
-          <Textarea
-            rows={3}
-            placeholder="bv. gitaar spelend op een podium"
-            value={action}
-            onChange={(e) => setAction(e.target.value)}
-            className="resize-none text-sm"
-          />
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Actie / scene</Label>
+            <button
+              type="button"
+              onClick={addAction}
+              className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              Voeg toe
+            </button>
+          </div>
+          <div className="space-y-2">
+            {actions.map((action, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder={`bv. ${["gitaar spelend op een podium", "rennend door een park", "lezend in een bibliotheek"][i % 3]}`}
+                  value={action}
+                  onChange={(e) => updateAction(i, e.target.value)}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeAction(i)}
+                  className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="h-px bg-border" />
@@ -250,52 +308,89 @@ export function CharacterGenerator() {
 
         <Button
           className="w-full gap-2" size="lg"
-          disabled={loading || !activeCharSrc || !action.trim()}
+          disabled={loading || !activeCharSrc || actions.every((a) => !a.trim())}
           onClick={generate}
         >
           <Wand2 className="h-4 w-4" />
-          {loading ? "Bezig met genereren…" : "Genereer"}
+          {loading
+            ? `Genereren… (${results.filter((r) => r.image || r.error).length}/${results.length})`
+            : `Genereer${actions.filter((a) => a.trim()).length > 1 ? ` (${actions.filter((a) => a.trim()).length})` : ""}`}
         </Button>
       </Card>
 
-      {/* Result */}
+      {/* Results */}
       <Card className="p-5">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground">Resultaat</span>
-          {result && (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={saveGeneration} disabled={saving || saved}>
-                {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bookmark className="h-3.5 w-3.5" />}
-                {saved ? "Opgeslagen" : "Opslaan"}
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={download}>
-                <Download className="h-3.5 w-3.5" />
-                Download
-              </Button>
-            </div>
+          {allDone && results.filter((r) => r.image).length > 1 && (
+            <Button variant="outline" size="sm" className="gap-1.5"
+              onClick={() => results.forEach((r, i) => { if (r.image) saveResult(i) })}
+              disabled={results.every((r) => r.saved || r.saving)}>
+              <Bookmark className="h-3.5 w-3.5" />
+              Alles opslaan
+            </Button>
           )}
         </div>
 
-        <div className="flex min-h-[500px] items-center justify-center rounded-xl border border-border bg-card">
-          {loading ? (
-            <div className="flex flex-col items-center gap-3 text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <p className="text-sm">Personage wordt gegenereerd…</p>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center gap-2 px-6 text-center text-destructive">
-              <ImageOff className="h-7 w-7" />
-              <p className="text-sm">{error}</p>
-            </div>
-          ) : result ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={result} alt="Gegenereerd personage" className="max-h-[700px] w-full object-contain" />
-          ) : (
+        {!hasResults ? (
+          <div className="flex min-h-[500px] items-center justify-center rounded-xl border border-border bg-card">
             <p className="px-6 text-center text-sm text-muted-foreground">
-              Selecteer een personage, geef een actie op en klik op Genereer
+              Selecteer een personage, voeg acties toe en klik op Genereer
             </p>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className={cn(
+            "grid gap-4",
+            results.length === 1 ? "grid-cols-1" :
+            results.length === 2 ? "grid-cols-2" :
+            "grid-cols-2 xl:grid-cols-3"
+          )}>
+            {results.map((item, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                {/* Action label */}
+                <p className="text-xs font-medium text-muted-foreground truncate" title={item.action}>
+                  {item.action}
+                </p>
+
+                {/* Image card */}
+                <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-card">
+                  {!item.image && !item.error ? (
+                    <div className="flex h-full items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : item.error ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-destructive">
+                      <ImageOff className="h-6 w-6" />
+                      <p className="text-xs">{item.error}</p>
+                    </div>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.image!} alt={item.action} className="h-full w-full object-contain" />
+                  )}
+                </div>
+
+                {/* Per-result actions */}
+                {item.image && (
+                  <div className="flex gap-1.5">
+                    <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs"
+                      onClick={() => saveResult(i)} disabled={item.saving || item.saved}>
+                      {item.saved
+                        ? <BookmarkCheck className="h-3 w-3" />
+                        : item.saving
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Bookmark className="h-3 w-3" />}
+                      {item.saved ? "Opgeslagen" : "Opslaan"}
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs" onClick={() => download(item)}>
+                      <Download className="h-3 w-3" />
+                      Download
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   )
