@@ -3,11 +3,13 @@
 import { useState } from "react"
 import { PromptSettings } from "@/components/settings/prompt-settings"
 import { ImageSettings } from "@/components/settings/image-settings"
+import { GenerationsGallery } from "@/components/settings/generations-gallery"
 import { cn } from "@/lib/utils"
 
 const TABS = [
-  { id: "prompts",     label: "Prompts" },
+  { id: "prompts",      label: "Prompts" },
   { id: "afbeeldingen", label: "Afbeeldingen" },
+  { id: "resultaten",   label: "Resultaten" },
 ]
 
 export default function SettingsPage() {
@@ -41,6 +43,7 @@ export default function SettingsPage() {
 
       {tab === "prompts"      && <PromptSettings />}
       {tab === "afbeeldingen" && <ImageSettings />}
+      {tab === "resultaten"   && <GenerationsGallery />}
     </div>
   )
 }
