@@ -52,7 +52,7 @@ export function ComparisonView({
           {loading ? (
             <div className="flex flex-col items-center gap-3 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm">Gemini kleurt je afbeelding in…</p>
+              <p className="text-sm">Afbeelding wordt ingekleurd…</p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center gap-2 px-6 text-center text-destructive">

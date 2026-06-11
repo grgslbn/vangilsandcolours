@@ -11,7 +11,7 @@ export default function Page() {
               Van Gils & Colours
             </h1>
             <p className="text-sm text-muted-foreground">
-              Kleur zwart-wit lijntekeningen in met je huisstijlpalet via Gemini
+              Kleur zwart-wit lijntekeningen in met je huisstijlpalet
             </p>
           </div>
         </div>

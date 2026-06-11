@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Illustratie Inkleuren',
-  description: 'Kleur zwart-wit lijntekeningen in met je huisstijlpalet via Gemini',
+  description: 'Kleur zwart-wit lijntekeningen in met je huisstijlpalet',
   generator: 'v0.app',
   icons: {
     icon: [

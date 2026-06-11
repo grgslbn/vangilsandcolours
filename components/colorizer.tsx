@@ -73,7 +73,7 @@ export function Colorizer() {
         <AdvancedSettings value={advanced} onChange={setAdvanced} />
         <Button className="w-full gap-2" size="lg" disabled={!canColorize} onClick={colorize}>
           <Wand2 className="h-4 w-4" />
-          {loading ? "Bezig met inkleuren…" : "Kleur in met Gemini"}
+          {loading ? "Bezig met inkleuren…" : "Kleur in"}
         </Button>
       </Card>
 
