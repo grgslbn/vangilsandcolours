@@ -1,7 +1,6 @@
 "use client"
 
-import Image from "next/image"
-import { Loader2, ImageOff } from "lucide-react"
+import { Loader2, ImageOff, Bookmark, BookmarkCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function ComparisonView({
@@ -9,11 +8,17 @@ export function ComparisonView({
   resultSrc,
   loading,
   error,
+  onSave,
+  saving,
+  saved,
 }: {
   originalSrc: string | null
   resultSrc: string | null
   loading: boolean
   error: string | null
+  onSave?: () => void
+  saving?: boolean
+  saved?: boolean
 }) {
   function download() {
     if (!resultSrc) return
@@ -31,7 +36,7 @@ export function ComparisonView({
         <div className="relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-xl border border-border bg-card">
           {originalSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={originalSrc || "/placeholder.svg"} alt="Origineel" className="h-full w-full object-contain" />
+            <img src={originalSrc} alt="Origineel" className="h-full w-full object-contain" />
           ) : (
             <p className="px-6 text-center text-sm text-muted-foreground">Selecteer of upload een afbeelding</p>
           )}
@@ -43,9 +48,21 @@ export function ComparisonView({
         <figcaption className="mb-2 flex items-center justify-between text-sm font-medium text-muted-foreground">
           <span>Ingekleurd</span>
           {resultSrc && (
-            <Button variant="link" size="sm" className="h-auto p-0 text-primary" onClick={download}>
-              Download
-            </Button>
+            <div className="flex items-center gap-2">
+              {onSave && (
+                <Button variant="link" size="sm" className="h-auto gap-1 p-0 text-primary" onClick={onSave} disabled={saving || saved}>
+                  {saved
+                    ? <BookmarkCheck className="h-3.5 w-3.5" />
+                    : saving
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Bookmark className="h-3.5 w-3.5" />}
+                  {saved ? "Opgeslagen" : "Opslaan"}
+                </Button>
+              )}
+              <Button variant="link" size="sm" className="h-auto p-0 text-primary" onClick={download}>
+                Download
+              </Button>
+            </div>
           )}
         </figcaption>
         <div className="relative flex aspect-[3/4] items-center justify-center overflow-hidden rounded-xl border border-border bg-card">
@@ -61,7 +78,7 @@ export function ComparisonView({
             </div>
           ) : resultSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={resultSrc || "/placeholder.svg"} alt="Ingekleurd resultaat" className="h-full w-full object-contain" />
+            <img src={resultSrc} alt="Ingekleurd resultaat" className="h-full w-full object-contain" />
           ) : (
             <p className="px-6 text-center text-sm text-muted-foreground">
               Het resultaat verschijnt hier na het inkleuren

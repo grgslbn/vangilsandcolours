@@ -8,13 +8,19 @@ import { ComparisonView } from "@/components/comparison-view"
 import { AdvancedSettings, DEFAULT_ADVANCED, type AdvancedSettingsValue } from "@/components/advanced-settings"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Wand2 } from "lucide-react"
+import { Wand2, Bookmark, BookmarkCheck, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 export function Colorizer() {
   const [palettes, setPalettes] = useState<Palette[]>(BRAND_PALETTES)
   const [selectedPalette, setSelectedPalette] = useState<Palette | null>(BRAND_PALETTES[1])
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null)
+  const [advanced, setAdvanced] = useState<AdvancedSettingsValue>(DEFAULT_ADVANCED)
+  const [result, setResult] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Pick up an image passed from the Splash Panels tool
   useEffect(() => {
@@ -24,10 +30,6 @@ export function Colorizer() {
       setSelectedImage({ src: injected, name: "Splash panel", isUpload: true })
     }
   }, [])
-  const [advanced, setAdvanced] = useState<AdvancedSettingsValue>(DEFAULT_ADVANCED)
-  const [result, setResult] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   function addPalette(p: Palette) {
     setPalettes((prev) => [...prev, p])
@@ -40,6 +42,7 @@ export function Colorizer() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setSaved(false)
     try {
       const res = await fetch("/api/colorize", {
         method: "POST",
@@ -61,6 +64,33 @@ export function Colorizer() {
       toast.error(msg)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function saveGeneration() {
+    if (!result) return
+    setSaving(true)
+    try {
+      const res = await fetch("/api/save-generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tool: "colouring",
+          imageDataUrl: result,
+          settingsJson: {
+            palette: selectedPalette?.name,
+            image: selectedImage?.name,
+            advanced,
+          },
+        }),
+      })
+      if (!res.ok) throw new Error()
+      setSaved(true)
+      toast.success("Opgeslagen.")
+    } catch {
+      toast.error("Opslaan mislukt.")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -93,6 +123,9 @@ export function Colorizer() {
           resultSrc={result}
           loading={loading}
           error={error}
+          onSave={result ? saveGeneration : undefined}
+          saving={saving}
+          saved={saved}
         />
       </Card>
     </div>

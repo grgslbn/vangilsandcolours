@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Wand2, Download, Palette, Loader2, ImageOff } from "lucide-react"
+import { Wand2, Download, Palette, Loader2, ImageOff, BookmarkCheck, Bookmark } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import type { SplashPanelBody } from "@/app/api/splash-panel/route"
@@ -64,7 +64,10 @@ export function SplashPanelGenerator() {
   const [description, setDescription] = useState("")
   const [settings, setSettings] = useState(DEFAULTS)
   const [result, setResult] = useState<string | null>(null)
+  const [promptUsed, setPromptUsed] = useState<string>("")
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function set<K extends keyof typeof DEFAULTS>(key: K, value: (typeof DEFAULTS)[K]) {
@@ -79,6 +82,7 @@ export function SplashPanelGenerator() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setSaved(false)
     try {
       const res = await fetch("/api/splash-panel", {
         method: "POST",
@@ -88,6 +92,7 @@ export function SplashPanelGenerator() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.debug || data.error || "Er ging iets mis.")
       setResult(data.image)
+      setPromptUsed(data.promptUsed ?? "")
       toast.success("Splash panel gegenereerd!")
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Er ging iets mis."
@@ -110,6 +115,30 @@ export function SplashPanelGenerator() {
     if (!result) return
     sessionStorage.setItem("injected_image", result)
     router.push("/colouring")
+  }
+
+  async function saveGeneration() {
+    if (!result) return
+    setSaving(true)
+    try {
+      const res = await fetch("/api/save-generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tool: "splash_panels",
+          imageDataUrl: result,
+          settingsJson: { description, ...settings },
+          promptUsed,
+        }),
+      })
+      if (!res.ok) throw new Error()
+      setSaved(true)
+      toast.success("Opgeslagen.")
+    } catch {
+      toast.error("Opslaan mislukt.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -236,6 +265,14 @@ export function SplashPanelGenerator() {
           <span className="text-sm font-medium text-muted-foreground">Resultaat</span>
           {result && (
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={saveGeneration} disabled={saving || saved}>
+                {saved
+                  ? <BookmarkCheck className="h-3.5 w-3.5" />
+                  : saving
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Bookmark className="h-3.5 w-3.5" />}
+                {saved ? "Opgeslagen" : "Opslaan"}
+              </Button>
               <Button variant="outline" size="sm" className="gap-1.5" onClick={download}>
                 <Download className="h-3.5 w-3.5" />
                 Download
