@@ -40,9 +40,11 @@ const LINE_INSTRUCTIONS: Record<string, string> = {
   bold:   "Use bold, graphic line work — thick confident strokes, strong silhouettes, minimal fine detail.",
 }
 
-function loadStyleRefBase64(): { base64: string; mediaType: string } {
-  const buffer = readFileSync(join(process.cwd(), "public/samples/economie.jpg"))
-  return { base64: buffer.toString("base64"), mediaType: "image/jpeg" }
+function loadStyleRefs(): { base64: string; mediaType: string }[] {
+  return ["wonen.jpg", "economie.jpg", "eco.jpg"].map((file) => ({
+    base64: readFileSync(join(process.cwd(), "public/samples", file)).toString("base64"),
+    mediaType: "image/jpeg",
+  }))
 }
 
 export async function POST(req: Request) {
@@ -81,7 +83,7 @@ STYLE:
 - Each scene must clearly illustrate a different aspect of the theme
 - Strong, iconic imagery — easily readable at a glance
 - No text, no labels, no captions anywhere in the illustration
-- Fill the entire canvas edge to edge${useStyleRef ? "\n- Match the visual style, line quality and composition approach of the provided reference illustration" : ""}
+- Fill the entire canvas edge to edge${useStyleRef ? "\n- The 3 reference illustrations provided show the exact visual style, line quality and composition language to match" : ""}
 
 Return only the illustration, nothing else.`
 
@@ -90,8 +92,9 @@ Return only the illustration, nothing else.`
     ]
 
     if (useStyleRef) {
-      const { base64, mediaType } = loadStyleRefBase64()
-      content.push({ type: "file", data: base64, mediaType })
+      for (const ref of loadStyleRefs()) {
+        content.push({ type: "file", data: ref.base64, mediaType: ref.mediaType })
+      }
     }
 
     const result = await generateText({
