@@ -1,6 +1,10 @@
+"use client"
+
 import { Colorizer } from "@/components/colorizer"
+import { Animator } from "@/components/animator"
 import { Toaster } from "@/components/ui/sonner"
-import { Palette } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Clapperboard, Palette } from "lucide-react"
 
 export default function Page() {
   return (
@@ -12,18 +16,37 @@ export default function Page() {
           </span>
           <div>
             <h1 className="text-lg font-semibold leading-tight text-card-foreground text-balance">
-              Illustratie Inkleuren
+              Illustratie Studio
             </h1>
             <p className="text-sm text-muted-foreground">
-              Kleur zwart-wit lijntekeningen in met je huisstijlpalet via Gemini
+              Kleur in en animeer lijntekeningen met je huisstijl
             </p>
           </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-        <Colorizer />
-      </section>
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
+        <Tabs defaultValue="inkleuren">
+          <TabsList className="mb-6 h-11 w-full max-w-sm">
+            <TabsTrigger value="inkleuren" className="flex-1 gap-2">
+              <Palette className="h-4 w-4" />
+              Inkleuren
+            </TabsTrigger>
+            <TabsTrigger value="animeren" className="flex-1 gap-2">
+              <Clapperboard className="h-4 w-4" />
+              Animeren
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="inkleuren" className="pb-8">
+            <Colorizer />
+          </TabsContent>
+
+          <TabsContent value="animeren" className="pb-8">
+            <Animator />
+          </TabsContent>
+        </Tabs>
+      </div>
 
       <Toaster />
     </main>

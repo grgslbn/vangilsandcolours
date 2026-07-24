@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Check, Plus, X } from "lucide-react"
 
@@ -101,16 +100,16 @@ function AddPaletteDialog({ onAdd }: { onAdd: (p: Palette) => void }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          <Plus className="h-4 w-4" />
-          Nieuw palet
-        </button>
-      </DialogTrigger>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <Plus className="h-4 w-4" />
+        Nieuw palet
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nieuw kleurenpalet</DialogTitle>
@@ -162,6 +161,7 @@ function AddPaletteDialog({ onAdd }: { onAdd: (p: Palette) => void }) {
           <Button onClick={save}>Palet opslaan</Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   )
 }
