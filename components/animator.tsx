@@ -12,6 +12,25 @@ import { Card } from "@/components/ui/card"
 import { Clapperboard, Download, Loader2, VideoOff } from "lucide-react"
 import { toast } from "sonner"
 
+async function compressImage(src: string, maxPx = 1024, quality = 0.85): Promise<string> {
+  // If it's already a URL (not a data URL), return as-is
+  if (!src.startsWith("data:")) return src
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+      const w = Math.round(img.width * scale)
+      const h = Math.round(img.height * scale)
+      const canvas = document.createElement("canvas")
+      canvas.width = w
+      canvas.height = h
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL("image/jpeg", quality))
+    }
+    img.src = src
+  })
+}
+
 export function Animator() {
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null)
   const [motionSettings, setMotionSettings] = useState<MotionSettings>(DEFAULT_MOTION_SETTINGS)
@@ -40,11 +59,12 @@ export function Animator() {
     setVideoUrl(null)
 
     try {
+      const compressedImage = await compressImage(selectedImage.src)
       const res = await fetch("/api/animate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          image: selectedImage.src,
+          image: compressedImage,
           prompt: motionSettings.prompt,
           duration: motionSettings.duration,
           cfgScale: motionSettings.cfgScale,
