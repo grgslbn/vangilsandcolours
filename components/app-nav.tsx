@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Palette, Users, Layers, Shuffle, Settings } from "lucide-react"
+import { Palette, Users, Layers, Shuffle, Clapperboard, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
   { href: "/colouring",     label: "Colouring",      icon: Palette },
   { href: "/characters",    label: "Characters",     icon: Users },
   { href: "/splash-panels", label: "Splash Panels",  icon: Layers },
+  { href: "/animation",     label: "Animation",      icon: Clapperboard },
   { href: "/variations",    label: "Variations",     icon: Shuffle },
 ]
 
