@@ -12,13 +12,17 @@ import { Card } from "@/components/ui/card"
 import { Clapperboard, Download, Loader2, VideoOff } from "lucide-react"
 import { toast } from "sonner"
 
-async function compressImage(src: string, maxPx = 1024, quality = 0.85): Promise<string> {
-  // If it's already a URL (not a data URL), return as-is
+async function compressImage(src: string, maxPx = 1920, minPx = 300, quality = 0.85): Promise<string> {
   if (!src.startsWith("data:")) return src
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
-      const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+      // Scale down if too large, but never below minPx on shortest side
+      const longest = Math.max(img.width, img.height)
+      const shortest = Math.min(img.width, img.height)
+      let scale = Math.min(1, maxPx / longest)
+      // Ensure shortest side stays >= minPx after scaling
+      if (shortest * scale < minPx) scale = minPx / shortest
       const w = Math.round(img.width * scale)
       const h = Math.round(img.height * scale)
       const canvas = document.createElement("canvas")
