@@ -111,6 +111,7 @@ export function Animator() {
       {/* Controls */}
       <Card className="h-fit space-y-6 p-5">
         <ImagePicker selected={selectedImage} onSelect={setSelectedImage} />
+        <p className="text-xs text-muted-foreground -mt-3">Min. 300×300 px vereist door het animatiemodel.</p>
         <div className="h-px bg-border" />
         <MotionSettingsPanel settings={motionSettings} onChange={setMotionSettings} />
         <Button
