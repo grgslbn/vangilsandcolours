@@ -73,7 +73,7 @@ export function Animator() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Er ging iets mis.")
+      if (!res.ok) throw new Error((data.debug || data.error) || "Er ging iets mis.")
       setVideoUrl(data.videoUrl)
       toast.success("Animatie klaar!")
     } catch (e) {

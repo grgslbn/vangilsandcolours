@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ videoUrl })
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err)
-    console.error("[animate] error:", raw)
+    const detail = (err as { body?: unknown })?.body
+    console.error("[animate] error:", raw, detail ? JSON.stringify(detail) : "")
 
     let message = "Het animeren is mislukt. Probeer het opnieuw."
     if (/unauthorized|forbidden|invalid.*key|401|403/i.test(raw)) {
@@ -79,6 +80,6 @@ export async function POST(req: NextRequest) {
       message = "Het fal.ai model is niet beschikbaar."
     }
 
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: message, debug: raw }, { status: 500 })
   }
 }
